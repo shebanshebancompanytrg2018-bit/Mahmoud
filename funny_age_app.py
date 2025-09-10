@@ -1,10 +1,18 @@
 import streamlit as st
 from datetime import datetime
-import matplotlib.pyplot as plt
+import plotly.express as px
+import pandas as pd
 
+# إعداد الصفحة
 st.set_page_config(page_title="برنامج حساب العمر الفكاهي", page_icon="🎂", layout="centered")
 
+# رسالة في البداية
+st.markdown("<h2 style='text-align:center; color:green;'>🌹 لا تنسوا الصلاة على النبي ﷺ 🌹</h2>", unsafe_allow_html=True)
+
 st.title("🎉 برنامج حساب العمر الفكاهي 🎂")
+
+# رابط التطبيق (عدّله حسب رابطك الفعلي على Streamlit Cloud)
+APP_URL = "https://funnyage.streamlit.app"
 
 # إدخال تاريخ الميلاد
 birth_date = st.date_input(
@@ -33,78 +41,71 @@ if birth_date:
     breaths = minutes * 16
     heartbeats = minutes * 70
     laughs = days * 13
-    sleep_years = years // 3
-    work_years = years // 4
-    food_tons = years * 1.2
 
-    # نص منسق
-    story = f"""
-    🎂 *عمرك الحالي:* {years} سنة  
-    ⏳ *هذا يعني أنك عشت:* {months} شهر – {weeks} أسبوع – {days} يوم  
+    # تقسيم العمر على أنشطة الحياة (تقديرات تقريبية)
+    sleep_years = round(years * 0.33, 2)   
+    work_years  = round(years * 0.25, 2)   
+    eat_years   = round(years * 0.04, 2)   
+    laugh_years = round(years * 0.02, 2)   
+    rest_years  = max(0.0, round(years - (sleep_years + work_years + eat_years + laugh_years), 2))
 
-    🕒 *أي ما يعادل:*  
-    - {hours:,} ساعة  
-    - {minutes:,} دقيقة  
-    - {seconds:,} ثانية  
+    # عرض النتائج
+    st.markdown(
+        f"""
+*🎂 عمرك الحالي:* {years} سنة  
+*⏳ عشت حتى الآن:* {months} شهر – {weeks} أسبوع – {days} يوم  
 
-    🌬️ *تنفست حوالي:* {breaths:,} نفس  
-    ❤️ *قلبك دق:* {heartbeats:,} مرة  
-    😂 *ضحكت تقريبًا:* {laughs:,} مرة  
-    🛌 *نمت حوالي:* {sleep_years} سنوات  
-    💼 *قضيت في العمل:* {work_years} سنوات  
-    🍔 *أكلت ما يعادل:* {food_tons:.1f} طن من الطعام  
+*🕒 وهذا يعادل:*  
+* {hours:,} ساعة  
+* {minutes:,} دقيقة  
+* {seconds:,} ثانية  
 
-    🚀 رحلة حياة طويلة، والأجمل أنها مستمرة بحمد الله 🤍
-    """
-
-    st.markdown(story)
-
-    # 📊 رسم بياني دائري لحياتك
-    st.subheader("📊 حياتك موزعة كالتالي:")
-
-    labels = ["🛌 نوم", "💼 عمل", "😂 ضحك", "🍔 أكل", "🌍 باقي الحياة"]
-    sizes = [
-        sleep_years,
-        work_years,
-        years * 0.5,
-        years * 0.3,
-        max(0, years - (sleep_years + work_years))
-    ]
-    colors = ["#FF9999", "#66B2FF", "#99FF99", "#FFD966", "#D9B3FF"]
-
-    fig, ax = plt.subplots()
-    wedges, texts, autotexts = ax.pie(
-        sizes, labels=labels, autopct="%1.1f%%", colors=colors, startangle=90
+*🌬️ أنفاسك:* {breaths:,} نفس  
+*❤️ دقات قلبك:* {heartbeats:,} نبضة  
+*😂 ضحكاتك:* {laughs:,} مرة  
+*🛌 نومك التقريبي:* {sleep_years} سنة  
+*💼 عملك التقريبي:* {work_years} سنة  
+*🍔 وقتك في تناول الطعام:* {eat_years} سنة  
+""",
+        unsafe_allow_html=False
     )
 
-    for text in texts + autotexts:
-        text.set_fontsize(12)
-        text.set_fontweight("bold")
+    # 📊 رسم دائري
+    st.subheader("📊 توزيع حياتك التقريبي")
+    pie_df = pd.DataFrame({
+        "النشاط": ["🛌 نوم", "💼 عمل", "🍔 أكل", "😂 ترفيه/ضحك", "🌍 باقي الحياة"],
+        "سنوات": [sleep_years, work_years, eat_years, laugh_years, rest_years]
+    })
+    fig_pie = px.pie(
+        pie_df, names="النشاط", values="سنوات",
+        hole=0.35, title="نظرة عامة على حياتك"
+    )
+    fig_pie.update_traces(textinfo="label+percent", insidetextorientation="auto")
+    st.plotly_chart(fig_pie, use_container_width=True)
 
-    ax.axis("equal")
-    st.pyplot(fig)
-
-    # 📌 شريط زمني (Timeline)
-    st.subheader("📈 خط حياتك الزمني (تقريبي):")
-    avg_life = 75  # متوسط العمر المتوقع
+    # 📈 شريط زمني
+    st.subheader("📈 خط حياتك الزمني (تقريبي)")
+    avg_life = 75
     lived = min(years, avg_life)
     remaining = max(0, avg_life - years)
-
-    fig2, ax2 = plt.subplots(figsize=(6, 1))
-    ax2.barh(["الحياة"], [lived], color="#66B2FF", label="ما عشته")
-    ax2.barh(["الحياة"], [remaining], left=[lived], color="#FFD966", label="المتبقي")
-    ax2.set_xlim(0, avg_life)
-    ax2.set_xlabel("بالسنوات")
-    ax2.legend()
-    st.pyplot(fig2)
+    bar_df = pd.DataFrame({
+        "الجزء": ["ما عشته", "المتبقي (تقديري)"],
+        "سنوات": [lived, remaining]
+    })
+    fig_bar = px.bar(
+        bar_df, x="سنوات", y="الجزء", orientation="h",
+        text="سنوات", title="مقارنة بين الماضي والمتبقي"
+    )
+    fig_bar.update_layout(yaxis=dict(categoryorder="array", categoryarray=["ما عشته", "المتبقي (تقديري)"]))
+    st.plotly_chart(fig_bar, use_container_width=True)
 
     # 🔗 روابط المشاركة
-    st.subheader("🔗 شارك نتيجتك مع الأصدقاء:")
-    whatsapp_url = f"https://wa.me/?text=🎂 عمري {years} سنة! جرب برنامج حساب العمر الفكاهي هنا: https://funnyage.streamlit.app"
-    facebook_url = f"https://www.facebook.com/sharer/sharer.php?u=https://funnyage.streamlit.app"
+    st.subheader("🔗 شارك نتيجتك مع الأصدقاء")
+    whatsapp_url = f"https://wa.me/?text=🎂 عمري {years} سنة! جرّب برنامج حساب العمر الفكاهي: {APP_URL}"
+    facebook_url = f"https://www.facebook.com/sharer/sharer.php?u={APP_URL}"
     st.markdown(f"[📱 شارك على واتساب]({whatsapp_url})")
     st.markdown(f"[🌐 شارك على فيسبوك]({facebook_url})")
 
 # توقيع
 st.markdown("---")
-st.markdown("✨ تم إنشاؤه بواسطة *محمود ناصيف (أبو عبد الرحمن)* ✨")
+st.markdown("✨ تم إنشاءه بواسطة *محمود ناصيف (أبو عبد الرحمن)* ✨")
